@@ -55,6 +55,7 @@ public class SlidingWindowRateLimiter implements RateLimiter {
                     for (int i = lastKey + 1; i% noOfBuckets != key; i++){
                         timeSlots.put(i, 0);
                     }
+                    timeSlots.put(key, 0);
                 }
                 // calculate total count
                 int total = timeSlots.entrySet().stream().mapToInt(x -> x.getValue()).sum();
@@ -71,7 +72,7 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 
 
     public static void main(String[] args) throws InterruptedException {
-        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofMinutes(1),
+        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofSeconds(4),
                 Duration.ofSeconds(2));
         for (int i =0; i< 100; i++){
             r.acquire();
