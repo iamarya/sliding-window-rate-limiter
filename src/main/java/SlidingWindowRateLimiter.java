@@ -48,7 +48,8 @@ public class SlidingWindowRateLimiter implements RateLimiter {
                 } else if (key == lastKey) {
                     // do nothing
                 } else if (key == lastKey + 1) {
-                    // do nothing
+                    // start of new bucket
+                    timeSlots.put(key, 0);
                 } else {
                     // move from lastkey+1 to currentkey-1 in a circular fashion
                     for (int i = lastKey + 1; i% noOfBuckets != key; i++){
@@ -70,7 +71,7 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 
 
     public static void main(String[] args) throws InterruptedException {
-        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofSeconds(10),
+        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofMinutes(1),
                 Duration.ofSeconds(2));
         for (int i =0; i< 100; i++){
             r.acquire();
