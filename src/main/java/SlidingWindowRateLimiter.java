@@ -1,24 +1,27 @@
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 public class SlidingWindowRateLimiter implements RateLimiter {
 
     int noOfBuckets;
     int rate;
     Duration rateDuration;
-    Duration windowSlideDuration;
+    Duration slidingDuration;
     Object lock = new Object();
     Map<Integer, Integer> timeSlots;
     Instant lastFetched;
-
-    public SlidingWindowRateLimiter(int rate, Duration rateDuration) {
+    public SlidingWindowRateLimiter(int rate, Duration rateDuration, Duration slidingDuration) {
+        if(rateDuration.toMillis()< slidingDuration.toMillis()){
+            throw new RuntimeException("slidingDuration should be more than rateDuration");
+        }
+        if(rateDuration.toMillis()%slidingDuration.toMillis()>0){
+            throw new RuntimeException("rateDuration should be multiple of slidingDuration");
+        }
         this.rate = rate;
         this.rateDuration = rateDuration;
-        this.windowSlideDuration = Duration.ofSeconds(1);
-        this.noOfBuckets = (int) (rateDuration.toSeconds() / windowSlideDuration.toSeconds());
+        this.slidingDuration = slidingDuration;
+        this.noOfBuckets = (int) (rateDuration.toMillis() / slidingDuration.toMillis());
         this.timeSlots = new LinkedHashMap(noOfBuckets);
         this.lastFetched = Instant.now();
         for (int i = 0; i < noOfBuckets; i++) {
@@ -26,12 +29,16 @@ public class SlidingWindowRateLimiter implements RateLimiter {
         }
     }
 
+    public SlidingWindowRateLimiter(int rate, Duration rateDuration) {
+        this(rate, rateDuration, Duration.ofSeconds(1));
+    }
+
     public void acquire() throws InterruptedException {
         synchronized (lock) {
             while (true) {
                 Instant now = Instant.now();
-                Integer key = (int) (now.getEpochSecond() % noOfBuckets);
-                Integer lastKey = (int) (lastFetched.getEpochSecond() % noOfBuckets);
+                Integer key = (int) (now.toEpochMilli() % noOfBuckets);
+                Integer lastKey = (int) (lastFetched.toEpochMilli() % noOfBuckets);
 
                 if (!Duration.between(lastFetched, now).minus(rateDuration).isNegative()) {
                     // last fetched is more than the duration so make all counts 0
@@ -63,11 +70,12 @@ public class SlidingWindowRateLimiter implements RateLimiter {
 
 
     public static void main(String[] args) throws InterruptedException {
-        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofSeconds(10));
+        SlidingWindowRateLimiter r = new SlidingWindowRateLimiter(4, Duration.ofSeconds(10),
+                Duration.ofSeconds(2));
         for (int i =0; i< 100; i++){
-            System.out.println("LoopStart "+i);
             r.acquire();
-            Thread.sleep(2000);
+            System.out.println("LoopStart "+i);
+            //Thread.sleep(2000);
             //System.out.println("LoopEnd "+i);
         }
     }
