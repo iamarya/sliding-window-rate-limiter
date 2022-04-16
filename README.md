@@ -15,6 +15,7 @@ Use the constructor `public SlidingWindowRateLimiter(int rate, Duration rateDura
 SlidingWindowRateLimiter rateLimiter = new SlidingWindowRateLimiter(4, Duration.ofSeconds(4),
                 Duration.ofSeconds(2));
 // rate limiter will allow 4 calls per 4 sec and the window will slide after every 2 secs. 
+rateLimiter.acquire(); // It will wait till the target api call can be possible. (blocking call)
 ```
 
 ```java
